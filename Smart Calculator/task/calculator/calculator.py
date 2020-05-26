@@ -1,4 +1,7 @@
 # write your code here
+# https://web.archive.org/web/20190618091844/http://interactivepython.org:80/runestone/static/pythonds/BasicDS/InfixPrefixandPostfixExpressions.html
+# https://stackoverflow.com/questions/41164797/method-to-convert-infix-to-reverse-polish-notationpostfix
+
 
 class SmartCalc():
 
@@ -25,6 +28,55 @@ class SmartCalc():
         else:
             print('Unknown variable')
         return
+
+    def toPostfix(infix):
+        stack = []
+        postfix = ''
+
+        for c in infix:
+            if isOperand(c):
+                postfix += c
+            else:
+                if isLeftParenthesis(c):
+                    stack.append(c)
+                elif isRightParenthesis(c):
+                    operator = stack.pop()
+                    while not isLeftParenthesis(operator):
+                        postfix += operator
+                        operator = stack.pop()
+                else:
+                    while (not isEmpty(stack)) and hasLessOrEqualPriority(c, peek(stack)):
+                        postfix += stack.pop()
+                    stack.append(c)
+
+        while (not isEmpty(stack)):
+            postfix += stack.pop()
+        return postfix
+
+    def toRpn(infixStr):
+        # divide string into tokens, and reverse so I can get them in order with pop()
+        tokens = re.split(r' *([\+\-\*\^/]) *', infixStr)
+        tokens = [t for t in reversed(tokens) if t != '']
+        precs = {'+': 0, '-': 0, '/': 1, '*': 1, '^': 2}
+
+        # convert infix expression tokens to RPN, processing only
+        # operators above a given precedence
+        def toRpn2(tokens, minprec):
+            rpn = tokens.pop()
+            while len(tokens) > 0:
+                prec = precs[tokens[-1]]
+                if prec < minprec:
+                    break
+                op = tokens.pop()
+
+                # get the argument on the operator's right
+                # this will go to the end, or stop at an operator
+                # with precedence <= prec
+                arg2 = toRpn2(tokens, prec + 1)
+                rpn += " " + arg2 + " " + op
+            return rpn
+
+        return toRpn2(tokens, 0)
 
     def compute_cmd(self):
         elements = self.cmd.split()
