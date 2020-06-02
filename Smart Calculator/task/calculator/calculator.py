@@ -167,8 +167,8 @@ class SmartCalc:
 
     def run(self):
         while True:
-            self.cmd = input()
-            # self.cmd = '4 + 6 - 18'
+            # self.cmd = input()
+            self.cmd = '4 + 6 - 8'
             # self.cmd = '4+6-18'
             # self.cmd = '2 - 3 - 4'
             # self.cmd = '8 + 7 - 4'
@@ -184,7 +184,7 @@ class SmartCalc:
                 print('Unknown command')
                 continue
             self.eval_cmd()
-            # exit()
+            exit()
 
 calc = SmartCalc()
 calc.run()
