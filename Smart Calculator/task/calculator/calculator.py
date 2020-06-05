@@ -4,7 +4,6 @@ import re
 
 
 class SmartCalc:
-
     precs = {'+': 0, '-': 0, '/': 1, '*': 1, '^': 2}
 
     def __init__(self):
@@ -32,44 +31,49 @@ class SmartCalc:
             print('Unknown variable')
         return
 
+    def clean_operator(self, ops):
+        if ops and all([o == '+' for o in ops]):
+            return '+'
+        elif ops and all([o == '-' for o in ops]):
+            if len(ops) % 2 == 0:
+                return '+'
+            else:
+                return '-'
+        elif ops and ops[0] in ['*', '/', '^']:
+            return ops[0]
+        elif ops:
+            print('Unknown operators ?')
+            return
+
     def clean_up_chain(self, chars):
+        # Clean up the operators
         chars = [c for c in chars if c != '']
         result = []
         current_ops = []
         for i, c in enumerate(chars):
-            if c.isnumeric():
-                if current_ops and all([o == '+' for o in current_ops]):
-                    result.append('+')
-                elif current_ops and all([o == '-' for o in current_ops]):
-                    if len(current_ops) % 2 == 0:
-                        result.append('+')
-                    else:
-                        result.append('-')
-                elif current_ops and current_ops[0] in ['*', '/', '^']:
-                    result.append(current_ops[0])
-                elif current_ops:
-                    print('Unknown operators ?')
-                    # print(current_ops)
+            if c.isnumeric() or c in '()':
+                op = self.clean_operator(current_ops)
+                if op:
+                    result.append(op)
                 result.append(c)
                 current_ops = []
             elif c in self.precs:
                 current_ops.append(c)
             else:
                 print('Error parsing input')
-
         return result
 
     def convert_to_rpn(self):
         # divide string into tokens, and reverse so I can get them in order with pop()
-        chars = re.split(r' *([\+\-\*\^/]) *', self.cmd)
-        # print(chars)
+        chars = re.split(r' *([\+\-\*\^/\(\)]) *', self.cmd)
+        print(chars)
         chars = self.clean_up_chain(chars)
-        # print(chars)
+        print(chars)
         # tokens = [t for t in reversed(tokens) if t != '']
         tokens = deque()
         tokens.extend(chars)
-        # print(tokens)
 
+        # print(tokens)
 
         # convert infix expression tokens to RPN, processing only
         # operators above a given precedence
@@ -96,6 +100,48 @@ class SmartCalc:
             return rpn
 
         self.stack = toRpn(tokens, 0)
+        print(self.stack)
+        return
+
+    def convert_to_rpn2(self):
+        # divide string into tokens, and reverse so I can get them in order with pop()
+        chars = re.split(r' *([\+\-\*\^/\(\)]) *', self.cmd)
+        # print('chars')
+        # print(chars)
+        chars = self.clean_up_chain(chars)
+        # print('clean')
+        # print(chars)
+        tokens = deque()
+        tokens.extend(chars)
+        # print('tokens')
+        # print(tokens)
+
+        self.stack = deque()
+        ops_stack = deque()
+
+        while len(tokens) > 0:
+            token = tokens.popleft()
+            if token.isnumeric():
+                self.stack.append(token)
+            # check if a known function
+            elif token in self.precs:
+                # top_op = ops_stack[-1]
+                while (len(ops_stack) > 0 and (ops_stack[-1] in self.precs) and (
+                        (self.precs[ops_stack[-1]] > self.precs[token])
+                        or (self.precs[ops_stack[-1]] == self.precs[token] and token in '+-*/'))
+                       and (ops_stack[-1] != '(')):
+                    self.stack.append(ops_stack.pop())
+                ops_stack.append(token)
+            elif token == '(':
+                ops_stack.append(token)
+            elif token == ')':
+                while ops_stack[-1] != '(':
+                    self.stack.append(ops_stack.pop())
+                if ops_stack[-1] == '(':
+                    ops_stack.pop()
+        while len(ops_stack) > 0:
+            self.stack.append(ops_stack.pop())
+
         # print(self.stack)
         return
 
@@ -111,18 +157,18 @@ class SmartCalc:
             elif element in self.precs:
                 # pop twice and perform operation
                 # push result to stack
-                x = float(calc_stack.pop())
                 y = float(calc_stack.pop())
+                x = float(calc_stack.pop())
                 if element == '+':
-                    calc_stack.appendleft(x + y)
+                    calc_stack.append(x + y)
                 elif element == '-':
-                    calc_stack.appendleft(x - y)
+                    calc_stack.append(x - y)
                 elif element == '*':
-                    calc_stack.appendleft(x * y)
+                    calc_stack.append(x * y)
                 elif element == '/':
-                    calc_stack.appendleft(x / y)
+                    calc_stack.append(x / y)
                 elif element == '^':
-                    calc_stack.appendleft(x ^ y)
+                    calc_stack.append(x ^ y)
         result = calc_stack.popleft()
         return int(result)
 
@@ -148,7 +194,7 @@ class SmartCalc:
         else:
             print(result)
         '''
-        self.convert_to_rpn()
+        self.convert_to_rpn2()
         # print(self.stack)
         test = self.eval_stack()
         print(test)
@@ -167,12 +213,14 @@ class SmartCalc:
 
     def run(self):
         while True:
-            # self.cmd = input()
-            self.cmd = '4 + 6 - 8'
+            self.cmd = input()
+            # self.cmd = '4 + 6 - 18'
             # self.cmd = '4+6-18'
             # self.cmd = '2 - 3 - 4'
             # self.cmd = '8 + 7 - 4'
             # self.cmd = '1 +++ 2 * 3 -- 4'
+            # self.cmd = '3 + 8 * ((4 + 3) * 2 + 1) - 6 / (2 + 1)'
+            # self.cmd = '3 + 4 * 2 / (1 - 5) ^ 2 ^ 3'
             if not self.cmd:
                 continue
             elif self.cmd == '/help':
@@ -184,7 +232,8 @@ class SmartCalc:
                 print('Unknown command')
                 continue
             self.eval_cmd()
-            exit()
+            # exit()
+
 
 calc = SmartCalc()
 calc.run()
