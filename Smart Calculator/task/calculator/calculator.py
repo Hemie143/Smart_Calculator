@@ -19,7 +19,7 @@ class SmartCalc:
             if value.isalpha():
                 self.vars[var] = self.get_var(value.strip())
             else:
-                self.vars[var] = int(value.strip())
+                self.vars[var] = value.strip()
         except:
             print('Invalid assignment')
 
@@ -31,7 +31,8 @@ class SmartCalc:
             print('Unknown variable')
         return
 
-    def clean_operator(self, ops):
+    @staticmethod
+    def clean_operator(ops):
         if ops and all([o == '+' for o in ops]):
             return '+'
         elif ops and all([o == '-' for o in ops]):
@@ -59,6 +60,12 @@ class SmartCalc:
                 current_ops = []
             elif c in self.precs:
                 current_ops.append(c)
+            elif c in self.vars:
+                op = self.clean_operator(current_ops)
+                if op:
+                    result.append(op)
+                result.append(self.vars[c])
+                current_ops = []
             else:
                 print('Error parsing input')
         return result
@@ -66,59 +73,13 @@ class SmartCalc:
     def convert_to_rpn(self):
         # divide string into tokens, and reverse so I can get them in order with pop()
         chars = re.split(r' *([\+\-\*\^/\(\)]) *', self.cmd)
-        print(chars)
         chars = self.clean_up_chain(chars)
-        print(chars)
-        # tokens = [t for t in reversed(tokens) if t != '']
+        if chars.count('(') != chars.count(')'):
+            return 'Invalid expression'
         tokens = deque()
         tokens.extend(chars)
-
-        # print(tokens)
-
-        # convert infix expression tokens to RPN, processing only
-        # operators above a given precedence
-        def toRpn(tokens, minprec):
-            # rpn = tokens.popleft()
-            rpn = deque()
-            rpn.append(tokens.popleft())
-            while len(tokens) > 0:
-                # prec = precs[tokens[-1]]
-                prec = self.precs[tokens[0]]
-                if prec < minprec:
-                    break
-                # op = tokens.pop()
-                op = tokens.popleft()
-                # print(op)
-
-                # get the argument on the operator's right
-                # this will go to the end, or stop at an operator
-                # with precedence <= prec
-                arg2 = toRpn(tokens, prec + 1)
-                # rpn += " " + arg2 + " " + op
-                rpn.extend(arg2)
-                rpn.append(op)
-            return rpn
-
-        self.stack = toRpn(tokens, 0)
-        print(self.stack)
-        return
-
-    def convert_to_rpn2(self):
-        # divide string into tokens, and reverse so I can get them in order with pop()
-        chars = re.split(r' *([\+\-\*\^/\(\)]) *', self.cmd)
-        # print('chars')
-        # print(chars)
-        chars = self.clean_up_chain(chars)
-        # print('clean')
-        # print(chars)
-        tokens = deque()
-        tokens.extend(chars)
-        # print('tokens')
-        # print(tokens)
-
         self.stack = deque()
         ops_stack = deque()
-
         while len(tokens) > 0:
             token = tokens.popleft()
             if token.isnumeric():
@@ -141,8 +102,6 @@ class SmartCalc:
                     ops_stack.pop()
         while len(ops_stack) > 0:
             self.stack.append(ops_stack.pop())
-
-        # print(self.stack)
         return
 
     def eval_stack(self):
@@ -174,33 +133,12 @@ class SmartCalc:
 
     def compute_cmd(self):
         elements = self.cmd.split()
-        '''
-        for i, e in enumerate(elements):
-            if e.isalpha():
-                elements[i] = str(self.vars[e])
-        compute_line = ' '.join(elements)
-        '''
-        '''
-        compute_line = []
-        for i, c in enumerate(elements):
-            if c.isalpha():
-                compute_line.append(str(self.vars[c]))
-            else:
-                compute_line.append(c)
-        try:
-            result = int(eval(compute_line))
-        except:
-            print("Invalid expression")
-        else:
-            print(result)
-        '''
-        self.convert_to_rpn2()
-        # print(self.stack)
-        test = self.eval_stack()
-        print(test)
-        # self.convert_to_rpn()
-        # self.eval_expr()
-
+        msg = self.convert_to_rpn()
+        if msg:
+            print(msg)
+            return
+        result = self.eval_stack()
+        print(result)
         return
 
     def eval_cmd(self):
@@ -214,13 +152,6 @@ class SmartCalc:
     def run(self):
         while True:
             self.cmd = input()
-            # self.cmd = '4 + 6 - 18'
-            # self.cmd = '4+6-18'
-            # self.cmd = '2 - 3 - 4'
-            # self.cmd = '8 + 7 - 4'
-            # self.cmd = '1 +++ 2 * 3 -- 4'
-            # self.cmd = '3 + 8 * ((4 + 3) * 2 + 1) - 6 / (2 + 1)'
-            # self.cmd = '3 + 4 * 2 / (1 - 5) ^ 2 ^ 3'
             if not self.cmd:
                 continue
             elif self.cmd == '/help':
@@ -232,7 +163,6 @@ class SmartCalc:
                 print('Unknown command')
                 continue
             self.eval_cmd()
-            # exit()
 
 
 calc = SmartCalc()
